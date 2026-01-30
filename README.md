@@ -47,14 +47,21 @@ A full-stack web application for creating and sending personalized AI-generated 
 
 ### 1. Clone and Setup Environment
 
+**Backend:**
 ```bash
-cd MerryMaker
+cd MerryMaker/backend
+cp .env.example .env
+```
+
+**Frontend:**
+```bash
+cd MerryMaker/frontend
 cp .env.example .env
 ```
 
 ### 2. Configure Environment Variables
 
-Edit `.env` file with your credentials:
+**Backend** (`backend/.env`):
 
 ```env
 # Database
@@ -81,6 +88,16 @@ EMAIL_PORT=587
 EMAIL_USER=your_email@gmail.com
 EMAIL_PASSWORD=your_app_password
 EMAIL_FROM=MerryMaker <your_email@gmail.com>
+```
+
+**Frontend** (`frontend/.env`):
+
+```env
+# API Configuration
+REACT_APP_API_URL=http://localhost:3001
+
+# CEO Email (must match backend CEO_EMAIL)
+REACT_APP_CEO_EMAIL=ceo@yourcompany.com
 ```
 
 ### 3. Google OAuth Setup
@@ -149,8 +166,17 @@ npm install
 
 ```bash
 cd backend
-npm run migrate:latest
+npx knex migrate:latest
 ```
+
+### 4. (Optional) Seed Test Data
+
+```bash
+cd backend
+npx knex seed:run
+```
+
+This will create 2 test users with sample data.
 
 ### 4. Start Backend Server
 
@@ -207,7 +233,10 @@ MerryMaker/
 │   │   │   └── passport.ts          # Google OAuth configuration
 │   │   ├── migrations/
 │   │   │   ├── *_create_users_table.ts
-│   │   │   └── *_create_christmas_cards_table.ts
+│   │   │   ├── *_create_christmas_cards_table.ts
+│   │   │   └── *_add_card_sent_tracking.ts
+│   │   ├── seeds/
+│   │   │   └── test_users.ts        # Test data seeder
 │   │   ├── routes/
 │   │   │   ├── auth.ts              # Authentication routes
 │   │   │   ├── users.ts             # User management routes
@@ -215,9 +244,12 @@ MerryMaker/
 │   │   ├── services/
 │   │   │   ├── aiService.ts         # OpenAI integration
 │   │   │   ├── emailService.ts      # Email sending
-│   │   │   └── imageService.ts      # Image processing
+│   │   │   ├── imageService.ts      # Image processing
+│   │   │   └── festiveCompositeService.ts  # Festive image composition
 │   │   ├── db.ts                    # Database connection
 │   │   └── index.ts                 # Express server
+│   ├── .env                         # Backend environment variables (gitignored)
+│   ├── .env.example                 # Backend environment template
 │   ├── knexfile.ts
 │   ├── package.json
 │   └── Dockerfile
@@ -234,10 +266,12 @@ MerryMaker/
 │   │   │   └── api.ts               # API client
 │   │   ├── App.tsx
 │   │   └── index.tsx
+│   ├── .env                         # Frontend environment variables (gitignored)
+│   ├── .env.example                 # Frontend environment template
 │   ├── package.json
 │   └── Dockerfile
 ├── docker-compose.yml
-├── .env.example
+├── .gitignore
 └── README.md
 ```
 
@@ -269,6 +303,7 @@ MerryMaker/
 - `name` - User's display name
 - `picture_url` - Path to uploaded selfie
 - `word` - User's special word
+- `card_sent_this_season` - Boolean flag (tracks if user received a card)
 - `created_at`, `updated_at` - Timestamps
 
 ### Christmas Cards Table
