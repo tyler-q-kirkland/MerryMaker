@@ -53,7 +53,12 @@ router.post('/preview', requireAuth, requireCEO, async (req: any, res: any) => {
     }
 
     // Generate AI composite message that combines CEO's message with recipient's word
-    const compositeMessage = await generateChristmasMessage(ceoMessage, recipient.word);
+    const compositeMessage = await generateChristmasMessage(
+      ceoMessage,
+      recipient.word,
+      ceo.name,
+      recipient.name
+    );
 
     // Generate AI festive image showing both people celebrating Christmas
     const aiGeneratedImageUrl = await generateFestiveImage(
@@ -64,7 +69,7 @@ router.post('/preview', requireAuth, requireCEO, async (req: any, res: any) => {
     );
 
     // Download and save the AI-generated image, or compose with actual photos as fallback
-    const festiveImageUrl = await composeFestiveImage(
+    const festiveImageResult = await composeFestiveImage(
       ceo.picture_url,
       recipient.picture_url,
       aiGeneratedImageUrl
@@ -78,7 +83,8 @@ router.post('/preview', requireAuth, requireCEO, async (req: any, res: any) => {
         recipientEmail: recipient.email,
         ceoMessage,
         aiGeneratedMessage: compositeMessage,
-        festiveImageUrl,
+        festiveImageUrl: festiveImageResult.imagePath,
+        usedFallback: festiveImageResult.usedFallback,
       },
     });
   } catch (error) {

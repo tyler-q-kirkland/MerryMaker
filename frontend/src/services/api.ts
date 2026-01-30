@@ -85,6 +85,7 @@ export interface CardPreview {
   ceoMessage: string;
   aiGeneratedMessage: string;
   festiveImageUrl: string;
+  usedFallback?: boolean;
 }
 
 export const previewChristmasCard = async (

@@ -28,16 +28,28 @@ export async function processAndSaveImage(
 export async function composeFestiveImage(
   ceoImagePath: string,
   recipientImagePath: string,
-  aiGeneratedImagePath: string
-): Promise<string> {
+  aiGeneratedImageResult: { imagePath: string; usedFallback: boolean } | string
+): Promise<{ imagePath: string; usedFallback: boolean }> {
   try {
     const uploadsDir = path.join(__dirname, '../../uploads');
     
-    // If we have an AI-generated image path from Stability AI, just return it
-    // Stability AI already saved the integrated image, no need to composite further
+    // Handle new object format
+    let aiGeneratedImagePath: string;
+    let usedFallback: boolean;
+    
+    if (typeof aiGeneratedImageResult === 'object') {
+      aiGeneratedImagePath = aiGeneratedImageResult.imagePath;
+      usedFallback = aiGeneratedImageResult.usedFallback;
+    } else {
+      // Legacy string format
+      aiGeneratedImagePath = aiGeneratedImageResult;
+      usedFallback = false;
+    }
+    
+    // If we have an AI-generated image path from Replicate/Stability AI, just return it
     if (aiGeneratedImagePath) {
-      console.log('Using Stability AI generated image:', aiGeneratedImagePath);
-      return aiGeneratedImagePath;
+      console.log('Using AI generated image:', aiGeneratedImagePath);
+      return { imagePath: aiGeneratedImagePath, usedFallback };
     }
     
     // Legacy code for downloading from URL (if needed for DALL-E)
@@ -99,7 +111,7 @@ export async function composeFestiveImage(
           .toFile(outputPath);
         
         console.log('User photos composited onto ornament scene successfully!');
-        return `/uploads/${outputFilename}`;
+        return { imagePath: `/uploads/${outputFilename}`, usedFallback };
       } catch (aiError) {
         console.error('Error compositing photos onto ornaments, falling back:', aiError);
         // Fall through to simple composite version below
@@ -201,7 +213,7 @@ export async function composeFestiveImage(
       .jpeg({ quality: 95 })
       .toFile(outputPath);
 
-    return `/uploads/${outputFilename}`;
+    return { imagePath: `/uploads/${outputFilename}`, usedFallback: true };
   } catch (error) {
     console.error('Error composing festive image:', error);
     // Fallback: create simple composite if decorative version fails
@@ -231,10 +243,10 @@ export async function composeFestiveImage(
         .jpeg({ quality: 90 })
         .toFile(outputPath);
       
-      return `/uploads/${outputFilename}`;
+      return { imagePath: `/uploads/${outputFilename}`, usedFallback: true };
     } catch (fallbackError) {
       console.error('Fallback image creation also failed:', fallbackError);
-      return '';
+      return { imagePath: '', usedFallback: true };
     }
   }
 }

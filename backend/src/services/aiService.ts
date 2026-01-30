@@ -70,7 +70,9 @@ Be VERY specific about ethnicity and skin tone to ensure accurate representation
 
 export async function generateChristmasMessage(
   ceoMessage: string,
-  recipientWord: string
+  recipientWord: string,
+  ceoName: string,
+  recipientName: string
 ): Promise<string> {
   try {
     const completion = await openai.chat.completions.create({
@@ -79,15 +81,23 @@ export async function generateChristmasMessage(
         {
           role: 'system',
           content:
-            'You are a warm and festive Christmas card message writer. Create positive, heartfelt messages that combine the CEO\'s personal message with the recipient\'s special word.',
+            'You are a warm and festive Christmas card message writer. Create positive, heartfelt messages that combine the CEO\'s personal message with the recipient\'s special word. IMPORTANT: Use the actual names provided - never use placeholders like [CEO\'s name], [Your Name], or [Recipient\'s name]. Always use the real names given to you. DO NOT include greetings like "Dear" or closings like "From" or "Sincerely" - just write the message body.',
         },
         {
           role: 'user',
           content: `Create a warm Christmas card message that incorporates the following:
+- CEO's name: ${ceoName}
 - CEO's personal message: "${ceoMessage}"
+- Recipient's name: ${recipientName}
 - Recipient's special word: "${recipientWord}"
 
-Make it festive, positive, and heartfelt. Keep it to 2-3 sentences.`,
+CRITICAL RULES:
+1. Use the actual names "${ceoName}" and "${recipientName}" in the message. Do NOT use placeholders like [CEO's name], [Your Name], or [Recipient's name].
+2. DO NOT start with "Dear ${recipientName}" or any greeting - the card already has that.
+3. DO NOT end with "From ${ceoName}" or "Sincerely" or any closing - the card already has a signature.
+4. Just write the message body content - 2-3 sentences that are festive, positive, and heartfelt.
+
+The message should feel personal and warm, coming from ${ceoName} to ${recipientName}, incorporating the word "${recipientWord}".`,
         },
       ],
       max_tokens: 200,
@@ -106,7 +116,7 @@ export async function generateFestiveImage(
   recipientImagePath: string,
   ceoName: string,
   recipientName: string
-): Promise<string> {
+): Promise<{ imagePath: string; usedFallback: boolean }> {
   try {
     console.log('Generating festive image using Replicate reve/remix model...');
     
@@ -205,7 +215,7 @@ export async function generateFestiveImage(
       await fs.writeFile(filepath, Buffer.from(imageResponse.data));
       console.log('Replicate remix image saved successfully!');
       
-      return `/uploads/${filename}`;
+      return { imagePath: `/uploads/${filename}`, usedFallback: false };
     }
     
     throw new Error(`Prediction failed or timed out. Status: ${prediction.status}, Error: ${prediction.error || 'none'}`);
@@ -222,10 +232,10 @@ export async function generateFestiveImage(
     
     try {
       const imagePath = await createFestiveComposite(ceoImagePath, recipientImagePath);
-      return imagePath;
+      return { imagePath, usedFallback: true };
     } catch (fallbackError) {
       console.error('Error creating festive composite:', fallbackError);
-      return '';
+      return { imagePath: '', usedFallback: true };
     }
   }
 }

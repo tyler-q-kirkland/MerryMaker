@@ -477,6 +477,11 @@ const CEODashboard: React.FC<CEODashboardProps> = ({ user, onLogout }) => {
                   src={`${process.env.REACT_APP_API_URL}${cardPreview.festiveImageUrl}`} 
                   alt="Christmas card" 
                 />
+                {cardPreview.usedFallback && (
+                  <div className="fallback-warning">
+                    ⚠️ Unable to reach Replicate AI service. Try again later. Backup image generated.
+                  </div>
+                )}
               </div>
               
               <div className="preview-message">
