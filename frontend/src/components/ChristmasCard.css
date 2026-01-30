@@ -2,118 +2,26 @@
   min-height: 100vh;
   background: linear-gradient(135deg, #c41e3a 0%, #165b33 100%);
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: center;
   padding: 2rem;
-  padding-top: 4rem;
   position: relative;
-  overflow-y: auto;
-  overflow-x: hidden;
-}
-
-.christmas-card {
-  background: white;
-  max-width: 800px;
-  width: 100%;
-  border-radius: 20px;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
   overflow: hidden;
-  z-index: 10;
-}
-
-.card-header {
-  background: linear-gradient(135deg, #c41e3a 0%, #165b33 100%);
-  color: white;
-  padding: 2rem;
-  text-align: center;
-}
-
-.card-header h1 {
-  font-size: 2.5rem;
-  margin-bottom: 1rem;
-}
-
-.card-from,
-.card-to {
-  font-size: 1.1rem;
-  margin: 0.5rem 0;
-  opacity: 0.95;
-}
-
-.card-image {
-  padding: 2rem;
-  text-align: center;
-  background: #f8f9fa;
-}
-
-.card-image img {
-  max-width: 100%;
-  border-radius: 15px;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-}
-
-.card-message {
-  padding: 2rem;
-}
-
-.ceo-message,
-.ai-message {
-  margin-bottom: 2rem;
-}
-
-.ceo-message h3,
-.ai-message h3 {
-  color: #c41e3a;
-  margin-bottom: 1rem;
-  font-size: 1.3rem;
-}
-
-.ceo-message p,
-.ai-message p {
-  color: #333;
-  font-size: 1.1rem;
-  line-height: 1.8;
-  padding: 1rem;
-  background: #f8f9fa;
-  border-radius: 10px;
-  border-left: 4px solid #165b33;
-}
-
-.ai-message p {
-  border-left-color: #c41e3a;
-  font-style: italic;
-}
-
-.card-footer {
-  background: #f8f9fa;
-  padding: 1.5rem 2rem;
-  text-align: center;
-  color: #666;
-  border-top: 2px solid #e0e0e0;
-}
-
-.card-footer p {
-  margin: 0.5rem 0;
-}
-
-.card-date {
-  font-size: 0.9rem;
-  color: #999;
 }
 
 /* Envelope Animation */
 .envelope-container {
   position: relative;
   width: 100%;
-  max-width: 800px;
-  perspective: 1000px;
+  max-width: 1100px;
+  perspective: 2000px;
   z-index: 10;
 }
 
 .envelope {
   position: relative;
   width: 100%;
-  height: 500px;
+  height: 700px;
   margin: 0 auto;
 }
 
@@ -122,13 +30,13 @@
   top: 0;
   left: 0;
   width: 100%;
-  height: 250px;
+  height: 350px;
   background: linear-gradient(135deg, #c41e3a 0%, #a01729 100%);
   transform-origin: top center;
   transform: rotateX(0deg);
-  animation: openFlap 2s ease-in-out forwards;
-  animation-delay: 0.5s;
-  z-index: 3;
+  animation: openFlap 2s ease-in-out forwards, lowerFlap 0s linear forwards;
+  animation-delay: 0.5s, 2.5s;
+  z-index: 8;
   border-radius: 0 0 20px 20px;
   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
 }
@@ -148,11 +56,11 @@
   bottom: 0;
   left: 0;
   width: 100%;
-  height: 300px;
+  height: 400px;
   background: linear-gradient(135deg, #165b33 0%, #0d3d20 100%);
   border-radius: 20px;
   box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
-  z-index: 2;
+  z-index: 5;
 }
 
 .envelope-body::after {
@@ -167,18 +75,6 @@
   text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
 }
 
-.card-content {
-  position: absolute;
-  top: 50px;
-  left: 50%;
-  transform: translateX(-50%) translateY(0);
-  width: 90%;
-  opacity: 0;
-  animation: slideOut 2s ease-in-out forwards;
-  animation-delay: 1.5s;
-  z-index: 4;
-}
-
 @keyframes openFlap {
   0% {
     transform: rotateX(0deg);
@@ -188,21 +84,283 @@
   }
 }
 
+@keyframes lowerFlap {
+  to {
+    z-index: 1;
+  }
+}
+
+/* Card Wrapper */
+.card-wrapper {
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%) translateY(0);
+  width: 95%;
+  max-width: 1000px;
+  opacity: 1;
+  z-index: 2;
+  perspective: 2000px;
+}
+
+.card-wrapper.show {
+  animation: slideOut 3s ease-in-out forwards, bringToFront 0s linear forwards;
+  animation-delay: 2.5s, 3.7s;
+}
+
+@keyframes raiseAboveFlap {
+  to {
+    z-index: 4;
+  }
+}
+
 @keyframes slideOut {
   0% {
     transform: translateX(-50%) translateY(0);
-    opacity: 0;
+  }
+  50% {
+    transform: translateX(-50%) translateY(-450px);
+  }
+  70% {
+    transform: translateX(-50%) translateY(-450px);
   }
   100% {
-    transform: translateX(-50%) translateY(-100px);
-    opacity: 1;
+    transform: translateX(-50%) translateY(0);
   }
 }
 
-.envelope-opened .christmas-card {
-  animation: none;
+@keyframes bringToFront {
+  to {
+    z-index: 7;
+  }
 }
 
+/* Greeting Card - Two-layer design - 3:2 aspect ratio */
+.greeting-card {
+  position: relative;
+  width: 100%;
+  height: 0;
+  padding-bottom: 66.67%; /* 3:2 aspect ratio (2/3 = 0.6667) */
+  transform-style: preserve-3d;
+  cursor: default;
+  pointer-events: none;
+}
+
+.greeting-card.can-interact {
+  cursor: pointer;
+  pointer-events: auto;
+}
+
+/* Base/Inside Page - Always visible underneath */
+.card-base {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  background: white;
+  border: 4px solid #165b33;
+  border-radius: 15px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+  overflow: hidden;
+  z-index: 1;
+  background-image: 
+    repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 35px,
+      rgba(22, 91, 51, 0.03) 35px,
+      rgba(22, 91, 51, 0.03) 36px
+    );
+}
+
+.card-inside-content {
+  padding: 3rem 4rem;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  font-family: 'Georgia', serif;
+}
+
+.card-header-text {
+  text-align: center;
+  margin-bottom: 1.5rem;
+}
+
+.card-header-text h1 {
+  color: #c41e3a;
+  font-size: 2.5rem;
+  margin-bottom: 1rem;
+  font-family: 'Georgia', serif;
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+.card-to {
+  color: #165b33;
+  font-size: 1.3rem;
+  font-style: italic;
+  margin: 1rem 0;
+}
+
+.card-message-content {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem 0;
+}
+
+.message-text {
+  color: #333;
+  font-size: 1.2rem;
+  line-height: 1.9;
+  text-align: center;
+  font-style: italic;
+  padding: 2rem;
+  background: rgba(22, 91, 51, 0.05);
+  border-radius: 10px;
+  border-left: 4px solid #c41e3a;
+  border-right: 4px solid #165b33;
+  max-width: 800px;
+}
+
+.card-signature {
+  text-align: right;
+  margin-top: 2rem;
+  color: #333;
+}
+
+.card-signature p {
+  margin: 0.3rem 0;
+  font-size: 1.1rem;
+}
+
+.signature-name {
+  font-size: 1.5rem;
+  font-weight: bold;
+  color: #165b33;
+  font-family: 'Brush Script MT', cursive;
+  margin-top: 0.5rem !important;
+}
+
+.card-date {
+  font-size: 0.9rem;
+  color: #999;
+  font-style: italic;
+  margin-top: 1rem !important;
+}
+
+.card-footer-decoration {
+  text-align: center;
+  font-size: 1.8rem;
+  margin-top: 1.5rem;
+  opacity: 0.6;
+}
+
+.card-footer-decoration span {
+  margin: 0 0.8rem;
+}
+
+/* Front Cover - Flips UP from bottom */
+.card-cover {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  background: white;
+  border: 4px solid #c41e3a;
+  border-radius: 15px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+  overflow: hidden;
+  z-index: 2;
+  transform-origin: top center;
+  transform: rotateX(0deg);
+  transition: transform 1s ease;
+}
+
+.greeting-card.open .card-cover {
+  transform: rotateX(180deg);
+}
+
+.card-cover-content {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #165b33 0%, #0f4225 100%);
+  padding: 2rem;
+}
+
+.card-cover-content img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 10px;
+}
+
+.card-front-title {
+  position: absolute;
+  bottom: 30px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(255, 255, 255, 0.95);
+  padding: 1rem 3rem;
+  border-radius: 15px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+}
+
+.card-front-title h1 {
+  margin: 0;
+  color: #c41e3a;
+  font-size: 2rem;
+  font-family: 'Georgia', serif;
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.1);
+  white-space: nowrap;
+}
+
+/* Click Instructions - OUTSIDE CARD */
+.click-instruction {
+  position: absolute;
+  bottom: -60px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(255, 255, 255, 0.95);
+  color: #165b33;
+  padding: 0.75rem 1.5rem;
+  border-radius: 25px;
+  font-weight: bold;
+  font-size: 1rem;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+  animation: pulse 2s ease-in-out infinite;
+  white-space: nowrap;
+  z-index: 100;
+}
+
+.click-instruction.fade-in {
+  animation: fadeInInstruction 1s ease-in forwards, pulse 2s ease-in-out infinite 1s;
+}
+
+@keyframes fadeInInstruction {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+}
+
+@keyframes pulse {
+  0%, 100% {
+    transform: translateX(-50%) scale(1);
+  }
+  50% {
+    transform: translateX(-50%) scale(1.05);
+  }
+}
+
+/* Loading and Error States */
 .card-loading,
 .card-error {
   min-height: 100vh;
@@ -214,6 +372,21 @@
   text-align: center;
 }
 
+.loading-spinner {
+  font-size: 4rem;
+  animation: spin 2s linear infinite;
+  margin-bottom: 1.5rem;
+}
+
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
 .card-error h1 {
   font-size: 3rem;
   margin-bottom: 1rem;
@@ -221,4 +394,164 @@
 
 .card-error p {
   font-size: 1.2rem;
+}
+
+/* Snowflakes */
+.snowflakes {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 9999;
+}
+
+.snowflake {
+  position: absolute;
+  top: -10%;
+  color: white;
+  font-size: 1.5rem;
+  opacity: 0.8;
+  animation: fall linear infinite;
+  text-shadow: 0 0 5px rgba(255, 255, 255, 0.5);
+}
+
+.snowflake:nth-child(1) {
+  left: 10%;
+  animation-duration: 10s;
+  animation-delay: 0s;
+}
+
+.snowflake:nth-child(2) {
+  left: 20%;
+  animation-duration: 12s;
+  animation-delay: 2s;
+  font-size: 2rem;
+}
+
+.snowflake:nth-child(3) {
+  left: 30%;
+  animation-duration: 8s;
+  animation-delay: 4s;
+}
+
+.snowflake:nth-child(4) {
+  left: 40%;
+  animation-duration: 14s;
+  animation-delay: 1s;
+  font-size: 1.8rem;
+}
+
+.snowflake:nth-child(5) {
+  left: 50%;
+  animation-duration: 11s;
+  animation-delay: 3s;
+}
+
+.snowflake:nth-child(6) {
+  left: 60%;
+  animation-duration: 9s;
+  animation-delay: 5s;
+  font-size: 2.2rem;
+}
+
+.snowflake:nth-child(7) {
+  left: 70%;
+  animation-duration: 13s;
+  animation-delay: 2s;
+}
+
+.snowflake:nth-child(8) {
+  left: 80%;
+  animation-duration: 10s;
+  animation-delay: 4s;
+  font-size: 1.6rem;
+}
+
+@keyframes fall {
+  0% {
+    top: -10%;
+    transform: translateX(0) rotate(0deg);
+  }
+  100% {
+    top: 110%;
+    transform: translateX(100px) rotate(360deg);
+  }
+}
+
+/* Responsive Design */
+@media (max-width: 1024px) {
+  .greeting-card {
+    height: 450px;
+  }
+
+  .card-inside-content {
+    padding: 2.5rem 3rem;
+  }
+
+  .card-header-text h1 {
+    font-size: 2rem;
+  }
+
+  .message-text {
+    font-size: 1.1rem;
+    padding: 1.5rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .greeting-card {
+    height: 400px;
+  }
+
+  .card-inside-content {
+    padding: 2rem 2rem;
+  }
+
+  .card-header-text h1 {
+    font-size: 1.8rem;
+  }
+
+  .message-text {
+    font-size: 1rem;
+    padding: 1.2rem;
+  }
+
+  .card-front-title h1 {
+    font-size: 1.5rem;
+  }
+
+  .click-instruction {
+    bottom: -50px;
+    font-size: 0.9rem;
+    padding: 0.6rem 1.2rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .greeting-card {
+    height: 300px;
+  }
+
+  .card-inside-content {
+    padding: 1.5rem 1rem;
+  }
+
+  .card-header-text h1 {
+    font-size: 1.4rem;
+  }
+
+  .message-text {
+    font-size: 0.9rem;
+    padding: 1rem;
+  }
+
+  .card-front-title h1 {
+    font-size: 1.2rem;
+  }
+
+  .signature-name {
+    font-size: 1.2rem;
+  }
 }

@@ -478,7 +478,13 @@
   box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
   text-align: center;
   min-width: 400px;
-  animation: slideUp 0.3s ease;
+  max-width: 90%;
+  animation: slideUp 0.3s ease forwards;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
 }
 
 @keyframes slideUp {
@@ -511,9 +517,13 @@
   font-size: 1.3rem;
   color: #165b33;
   font-weight: 600;
-  margin: 0;
+  margin: 0 auto !important;
+  padding: 0 !important;
   min-height: 2rem;
-  animation: pulse 1s ease-in-out infinite;
+  line-height: 2rem;
+  text-align: center !important;
+  width: 100%;
+  display: block;
 }
 
 @keyframes pulse {

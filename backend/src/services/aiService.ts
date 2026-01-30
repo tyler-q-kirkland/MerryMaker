@@ -127,9 +127,9 @@ export async function generateFestiveImage(
     // This model uses reference_images array and blends them together
     const requestBody = {
       input: {
-        prompt: 'Take these two people and put them into a Christmas scene. The Christmas scenes can be one of the following: Snowball fight, Sleighriding, Walking down a christmas village road, Building a snowman, Putting up christmas lights, Building a gingerbread house, Ice skating, Decorating a christmas tree, One person holding the ladder the other hanging lights, Sledding down a hill, Sitting by a fireplace in sweaters, Drinking hot chocolate or mulled cider, Carrying a small tree together. The style should be cartoonish in nature, like the classic television show Peanuts. Remember that this will be between a CEO and an employee and should not be too personal- but ensure it is still warm.',
+        prompt: 'Take these two people and put them into a Christmas scene. The Christmas scenes can be one of the following numbered options: 1. Snowball fight 2. Sleighriding 3. Walking down a christmas village road 4. Building a snowman 5. Putting up christmas lights 6. Building a gingerbread house 7. Ice skating 8. Decorating a christmas tree 9. One person holding the ladder the other hanging lights 10. Sledding down a hill 11. Sitting by a fireplace in sweaters 12. Drinking hot chocolate or mulled cider 13. Carrying a small tree together. The style should be cartoonish in nature, like the classic television show Peanuts. Remember that this will be between a CEO and an employee and should not be too personal- but ensure it is still warm.',
         version: 'latest',
-        aspect_ratio: '1:1',
+        aspect_ratio: '3:2',
         reference_images: [ceoDataUrl, recipientDataUrl],
       },
     };

@@ -8,6 +8,9 @@ const ChristmasCard: React.FC = () => {
   const [card, setCard] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [isOpen, setIsOpen] = useState(false);
+  const [showCard, setShowCard] = useState(false);
+  const [canInteract, setCanInteract] = useState(false);
 
   useEffect(() => {
     loadCard();
@@ -19,10 +22,21 @@ const ChristmasCard: React.FC = () => {
     try {
       const data = await getCardByToken(token);
       setCard(data.card);
+      // Show card to trigger animation - set at 0s so animation-delay controls timing
+      setTimeout(() => setShowCard(true), 0);
+      // Enable interaction after card slide completes
+      // Card slide starts at 2.5s + 3s duration = 5.5s total
+      setTimeout(() => setCanInteract(true), 5600); // 5.5s + 100ms buffer
     } catch (err) {
       setError('Card not found or has expired.');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleCardClick = () => {
+    if (canInteract) {
+      setIsOpen(!isOpen);
     }
   };
 
@@ -51,43 +65,66 @@ const ChristmasCard: React.FC = () => {
           <div className="envelope-flap"></div>
           <div className="envelope-body"></div>
           
-          <div className="card-content">
-            <div className="christmas-card">
-              <div className="card-header">
-                <h1>🎄 Merry Christmas! 🎄</h1>
-                <p className="card-from">From: {card.sender}</p>
-                <p className="card-to">To: {card.recipient}</p>
-              </div>
-
-              {card.festiveImageUrl && (
-                <div className="card-image">
-                  <img 
-                    src={`${process.env.REACT_APP_API_URL}${card.festiveImageUrl}`} 
-                    alt="Festive greeting" 
-                  />
-                </div>
-              )}
-
-              <div className="card-message">
-                {card.message && (
-                  <div className="message">
-                    <h3>✨ Holiday Message:</h3>
-                    <p>{card.message}</p>
+          <div className={`card-wrapper ${showCard ? 'show' : ''}`}>
+            <div className={`greeting-card ${isOpen ? 'open' : ''} ${canInteract ? 'can-interact' : ''}`} onClick={handleCardClick}>
+              {/* Base/Inside Page - Always visible underneath */}
+              <div className="card-base">
+                <div className="card-inside-content">
+                  <div className="card-header-text">
+                    <h1>Season's Greetings!</h1>
+                    <p className="card-to">Dear {card.recipient},</p>
                   </div>
-                )}
+
+                  <div className="card-message-content">
+                    {card.message && (
+                      <p className="message-text">{card.message}</p>
+                    )}
+                  </div>
+
+                  <div className="card-signature">
+                    <p>With warm wishes,</p>
+                    <p className="signature-name">{card.sender}</p>
+                    <p className="card-date">
+                      {new Date(card.createdAt).toLocaleDateString('en-US', {
+                        year: 'numeric',
+                        month: 'long',
+                        day: 'numeric'
+                      })}
+                    </p>
+                  </div>
+
+                  <div className="card-footer-decoration">
+                    <span>❄️</span>
+                    <span>🎄</span>
+                    <span>⭐</span>
+                    <span>🎄</span>
+                    <span>❄️</span>
+                  </div>
+                </div>
               </div>
 
-              <div className="card-footer">
-                <p>🎅 Sent with love from MerryMaker 🎅</p>
-                <p className="card-date">
-                  {new Date(card.createdAt).toLocaleDateString('en-US', {
-                    year: 'numeric',
-                    month: 'long',
-                    day: 'numeric'
-                  })}
-                </p>
+              {/* Front Cover - Flips up to reveal inside */}
+              <div className="card-cover">
+                <div className="card-cover-content">
+                  {card.festiveImageUrl && (
+                    <img 
+                      src={`${process.env.REACT_APP_API_URL}${card.festiveImageUrl}`} 
+                      alt="Festive greeting" 
+                    />
+                  )}
+                  <div className="card-front-title">
+                    <h1>🎄 Merry Christmas 🎄</h1>
+                  </div>
+                </div>
               </div>
             </div>
+
+            {/* Click instruction - outside the card */}
+            {canInteract && (
+              <div className="click-instruction fade-in">
+                {isOpen ? 'Click to close ↓' : 'Click to open ↑'}
+              </div>
+            )}
           </div>
         </div>
       </div>
