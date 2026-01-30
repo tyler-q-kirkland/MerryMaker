@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { User, UserStats, getAllUsers, sendChristmasCard, uploadPicture, logout, getUserProfile, getUserStats, resetCardSeason } from '../services/api';
+import { User, UserStats, getAllUsers, previewChristmasCard, confirmChristmasCard, uploadPicture, logout, getUserProfile, getUserStats, resetCardSeason, CardPreview } from '../services/api';
 import './CEODashboard.css';
 
 interface CEODashboardProps {
@@ -20,6 +20,11 @@ const CEODashboard: React.FC<CEODashboardProps> = ({ user, onLogout }) => {
   const [loadingMessage, setLoadingMessage] = useState('');
   const [showLoadingDialog, setShowLoadingDialog] = useState(false);
   const [activeFilter, setActiveFilter] = useState<'all' | 'ready' | 'received' | 'notReady'>('all');
+  
+  // Preview modal state
+  const [showPreview, setShowPreview] = useState(false);
+  const [cardPreview, setCardPreview] = useState<CardPreview | null>(null);
+  const [editedMessage, setEditedMessage] = useState('');
 
   const loadingMessages = [
     'Licking envelopes...',
@@ -156,7 +161,7 @@ const CEODashboard: React.FC<CEODashboardProps> = ({ user, onLogout }) => {
   
   const filteredUsers = getFilteredUsers();
 
-  const handleSendCard = async (e: React.FormEvent) => {
+  const handleGeneratePreview = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedUser || !message) return;
 
@@ -174,12 +179,48 @@ const CEODashboard: React.FC<CEODashboardProps> = ({ user, onLogout }) => {
     setLoadingMessage(loadingMessages[Math.floor(Math.random() * loadingMessages.length)]);
     
     try {
-      await sendChristmasCard(selectedUser.id, message);
-      setStatusMessage(`Christmas card sent to ${selectedUser.name}! 🎄`);
+      const preview = await previewChristmasCard(selectedUser.id, message);
+      setCardPreview(preview);
+      setEditedMessage(preview.aiGeneratedMessage);
+      setShowPreview(true);
+    } catch (error: any) {
+      setStatusMessage(error.response?.data?.error || 'Failed to generate card. Please try again.');
+    } finally {
+      clearInterval(messageInterval);
+      setShowLoadingDialog(false);
+      setLoading(false);
+    }
+  };
+
+  const handleCancelPreview = () => {
+    setShowPreview(false);
+    setCardPreview(null);
+    setEditedMessage('');
+    // Don't clear message or selectedUser - return to dashboard as-is
+  };
+
+  const handleConfirmSend = async () => {
+    if (!cardPreview) return;
+
+    setLoading(true);
+    setStatusMessage('');
+    
+    try {
+      await confirmChristmasCard(
+        cardPreview.recipientId,
+        cardPreview.ceoMessage,
+        editedMessage,
+        cardPreview.festiveImageUrl
+      );
+      
+      setStatusMessage(`Christmas card sent to ${cardPreview.recipientName}! 🎄`);
       setMessage('');
+      setShowPreview(false);
+      setCardPreview(null);
+      setEditedMessage('');
       
       // Store current index before reload
-      const currentIndex = eligibleUsers.findIndex(u => u.id === selectedUser.id);
+      const currentIndex = eligibleUsers.findIndex(u => u.id === selectedUser?.id);
       const nextIndex = currentIndex + 1;
       
       // Reload users and stats to reflect the sent card
@@ -218,8 +259,6 @@ const CEODashboard: React.FC<CEODashboardProps> = ({ user, onLogout }) => {
     } catch (error: any) {
       setStatusMessage(error.response?.data?.error || 'Failed to send card. Please try again.');
     } finally {
-      clearInterval(messageInterval);
-      setShowLoadingDialog(false);
       setLoading(false);
     }
   };
@@ -303,7 +342,7 @@ const CEODashboard: React.FC<CEODashboardProps> = ({ user, onLogout }) => {
           ) : eligibleUsers.length === 0 ? (
             <p className="warning">No users are ready to receive cards yet. Users need to upload their picture and set their word.</p>
           ) : (
-            <form onSubmit={handleSendCard}>
+            <form onSubmit={handleGeneratePreview}>
               <div className="form-group">
                 <label>Select Recipient:</label>
                 <select
@@ -361,7 +400,7 @@ const CEODashboard: React.FC<CEODashboardProps> = ({ user, onLogout }) => {
               </div>
 
               <button type="submit" disabled={loading || !selectedUser}>
-                {loading ? 'Sending...' : 'Send Christmas Card 🎄'}
+                {loading ? 'Generating Card...' : 'Generate Card 🎄'}
               </button>
             </form>
           )}
@@ -420,6 +459,53 @@ const CEODashboard: React.FC<CEODashboardProps> = ({ user, onLogout }) => {
           <div className="loading-dialog">
             <div className="loading-spinner">🎄</div>
             <p className="loading-message">{loadingMessage}</p>
+          </div>
+        </div>
+      )}
+
+      {showPreview && cardPreview && (
+        <div className="loading-dialog-overlay">
+          <div className="preview-dialog">
+            <div className="preview-header">
+              <h2>Preview Christmas Card</h2>
+              <p>To: {cardPreview.recipientName} ({cardPreview.recipientEmail})</p>
+            </div>
+            
+            <div className="preview-content">
+              <div className="preview-image">
+                <img 
+                  src={`${process.env.REACT_APP_API_URL}${cardPreview.festiveImageUrl}`} 
+                  alt="Christmas card" 
+                />
+              </div>
+              
+              <div className="preview-message">
+                <label>Message:</label>
+                <textarea
+                  value={editedMessage}
+                  onChange={(e) => setEditedMessage(e.target.value)}
+                  rows={6}
+                  disabled={loading}
+                />
+              </div>
+            </div>
+            
+            <div className="preview-actions">
+              <button 
+                onClick={handleCancelPreview} 
+                disabled={loading}
+                className="cancel-btn"
+              >
+                Cancel
+              </button>
+              <button 
+                onClick={handleConfirmSend} 
+                disabled={loading || !editedMessage.trim()}
+                className="send-btn"
+              >
+                {loading ? 'Sending...' : 'Send Card 🎄'}
+              </button>
+            </div>
           </div>
         </div>
       )}

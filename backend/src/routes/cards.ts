@@ -23,8 +23,8 @@ const requireCEO = (req: any, res: any, next: any) => {
   next();
 };
 
-// Send a Christmas card (CEO only)
-router.post('/send', requireAuth, requireCEO, async (req: any, res: any) => {
+// Preview a Christmas card (CEO only) - generates but doesn't save or send
+router.post('/preview', requireAuth, requireCEO, async (req: any, res: any) => {
   try {
     const { recipientId, ceoMessage } = req.body;
 
@@ -70,16 +70,48 @@ router.post('/send', requireAuth, requireCEO, async (req: any, res: any) => {
       aiGeneratedImageUrl
     );
 
+    // Return preview data without saving to database
+    res.json({
+      preview: {
+        recipientId,
+        recipientName: recipient.name,
+        recipientEmail: recipient.email,
+        ceoMessage,
+        aiGeneratedMessage: compositeMessage,
+        festiveImageUrl,
+      },
+    });
+  } catch (error) {
+    console.error('Error generating card preview:', error);
+    res.status(500).json({ error: 'Failed to generate card preview' });
+  }
+});
+
+// Confirm and send a Christmas card (CEO only) - saves and sends the card
+router.post('/confirm', requireAuth, requireCEO, async (req: any, res: any) => {
+  try {
+    const { recipientId, ceoMessage, finalMessage, festiveImageUrl } = req.body;
+
+    if (!recipientId || !ceoMessage || !finalMessage || !festiveImageUrl) {
+      return res.status(400).json({ error: 'All fields are required' });
+    }
+
+    // Get recipient details
+    const recipient = await db('users').where({ id: recipientId }).first();
+    if (!recipient) {
+      return res.status(404).json({ error: 'Recipient not found' });
+    }
+
     // Create unique token for the card
     const cardToken = uuidv4();
 
-    // Save card to database (only storing the composite AI message)
+    // Save card to database
     const [card] = await db('christmas_cards')
       .insert({
         sender_id: req.user.id,
         recipient_id: recipientId,
         ceo_message: ceoMessage, // Keep original for reference
-        ai_generated_message: compositeMessage, // This is the composite message shown to user
+        ai_generated_message: finalMessage, // This is the final (possibly edited) message
         festive_image_url: festiveImageUrl,
         card_token: cardToken,
       })

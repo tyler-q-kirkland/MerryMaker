@@ -78,13 +78,37 @@ export const getAllUsers = async (showSent: boolean = false): Promise<User[]> =>
 };
 
 // Cards
-export const sendChristmasCard = async (
+export interface CardPreview {
+  recipientId: number;
+  recipientName: string;
+  recipientEmail: string;
+  ceoMessage: string;
+  aiGeneratedMessage: string;
+  festiveImageUrl: string;
+}
+
+export const previewChristmasCard = async (
   recipientId: number,
   ceoMessage: string
-): Promise<ChristmasCard> => {
-  const response = await api.post('/api/cards/send', {
+): Promise<CardPreview> => {
+  const response = await api.post('/api/cards/preview', {
     recipientId,
     ceoMessage,
+  });
+  return response.data.preview;
+};
+
+export const confirmChristmasCard = async (
+  recipientId: number,
+  ceoMessage: string,
+  finalMessage: string,
+  festiveImageUrl: string
+): Promise<ChristmasCard> => {
+  const response = await api.post('/api/cards/confirm', {
+    recipientId,
+    ceoMessage,
+    finalMessage,
+    festiveImageUrl,
   });
   return response.data.card;
 };
