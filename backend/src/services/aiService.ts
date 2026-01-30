@@ -1,10 +1,16 @@
 import OpenAI from 'openai';
 import fs from 'fs/promises';
 import path from 'path';
+import axios from 'axios';
 
+// Configure OpenAI SDK to use OpenRouter
 const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-  baseURL: process.env.OPENAI_BASE_URL || 'https://api.openai.com/v1',
+  apiKey: process.env.OPENROUTER_API_KEY,
+  baseURL: 'https://openrouter.ai/api/v1',
+  defaultHeaders: {
+    'HTTP-Referer': process.env.FRONTEND_URL || 'http://localhost:3000',
+    'X-Title': 'MerryMaker Christmas Cards',
+  },
 });
 
 // Helper function to convert image to base64
@@ -21,7 +27,7 @@ async function describePhoto(imagePath: string, personRole: string): Promise<str
     const mimeType = imagePath.endsWith('.png') ? 'image/png' : 'image/jpeg';
     
     const response = await openai.chat.completions.create({
-      model: 'gpt-4o',  // Updated model name (gpt-4-vision-preview is deprecated)
+      model: 'openai/gpt-4o',  // Using OpenRouter's model naming
       messages: [
         {
           role: 'user',
@@ -68,7 +74,7 @@ export async function generateChristmasMessage(
 ): Promise<string> {
   try {
     const completion = await openai.chat.completions.create({
-      model: 'gpt-4',
+      model: 'openai/gpt-4',  // Using OpenRouter's model naming
       messages: [
         {
           role: 'system',
@@ -101,15 +107,125 @@ export async function generateFestiveImage(
   ceoName: string,
   recipientName: string
 ): Promise<string> {
-  // Use festive composite with decorative wreaths - simple, reliable, and professional
-  const { createFestiveComposite } = require('./festiveCompositeService');
-  
   try {
-    console.log('Creating festive composite with decorative wreaths...');
-    const imagePath = await createFestiveComposite(ceoImagePath, recipientImagePath);
-    return imagePath;
+    console.log('Generating festive image using Replicate reve/remix model...');
+    
+    // Convert both images to base64 data URLs for reference_images
+    const ceoBase64 = await imageToBase64(ceoImagePath);
+    const recipientBase64 = await imageToBase64(recipientImagePath);
+    
+    console.log('CEO image size:', ceoBase64.length, 'bytes');
+    console.log('Recipient image size:', recipientBase64.length, 'bytes');
+    
+    const ceoMimeType = ceoImagePath.endsWith('.png') ? 'image/png' : 'image/jpeg';
+    const recipientMimeType = recipientImagePath.endsWith('.png') ? 'image/png' : 'image/jpeg';
+    
+    const ceoDataUrl = `data:${ceoMimeType};base64,${ceoBase64}`;
+    const recipientDataUrl = `data:${recipientMimeType};base64,${recipientBase64}`;
+    
+    // Create prediction using Replicate's reve/remix model
+    // This model uses reference_images array and blends them together
+    const requestBody = {
+      input: {
+        prompt: 'Take these two people and put them into a Christmas scene. The Christmas scenes can be one of the following: Snowball fight, Sleighriding, Walking down a christmas village road, Building a snowman, Putting up christmas lights, Building a gingerbread house, Ice skating, Decorating a christmas tree, One person holding the ladder the other hanging lights, Sledding down a hill, Sitting by a fireplace in sweaters, Drinking hot chocolate or mulled cider, Carrying a small tree together. The style should be cartoonish in nature, like the classic television show Peanuts. Remember that this will be between a CEO and an employee and should not be too personal- but ensure it is still warm.',
+        version: 'latest',
+        aspect_ratio: '1:1',
+        reference_images: [ceoDataUrl, recipientDataUrl],
+      },
+    };
+    
+    console.log('Sending request to Replicate reve/remix with:');
+    console.log('- Prompt length:', requestBody.input.prompt.length);
+    console.log('- Reference images count:', requestBody.input.reference_images.length);
+    console.log('- Image 1 length:', requestBody.input.reference_images[0].length);
+    console.log('- Image 2 length:', requestBody.input.reference_images[1].length);
+    
+    const createResponse = await axios.post(
+      'https://api.replicate.com/v1/models/reve/remix/predictions',
+      requestBody,
+      {
+        headers: {
+          'Authorization': `Token ${process.env.REPLICATE_API_KEY}`,
+          'Content-Type': 'application/json',
+        },
+      }
+    );
+    
+    console.log('Replicate prediction created:', createResponse.data.id);
+    console.log('Full response:', JSON.stringify(createResponse.data, null, 2));
+    
+    if (createResponse.data.error) {
+      console.error('Replicate error:', createResponse.data.error);
+    }
+    
+    // Poll for the result
+    let prediction = createResponse.data;
+    const maxAttempts = 60; // 60 attempts * 2 seconds = 2 minutes max
+    let attempts = 0;
+    
+    while (prediction.status !== 'succeeded' && prediction.status !== 'failed' && attempts < maxAttempts) {
+      await new Promise(resolve => setTimeout(resolve, 2000)); // Wait 2 seconds
+      
+      const statusResponse = await axios.get(
+        `https://api.replicate.com/v1/predictions/${prediction.id}`,
+        {
+          headers: {
+            'Authorization': `Token ${process.env.REPLICATE_API_KEY}`,
+          },
+        }
+      );
+      
+      prediction = statusResponse.data;
+      attempts++;
+      console.log(`Prediction status: ${prediction.status} (attempt ${attempts}/${maxAttempts})`);
+      
+      if (prediction.error) {
+        console.error('Prediction error:', prediction.error);
+      }
+    }
+    
+    if (prediction.status === 'succeeded' && prediction.output) {
+      // The output should be a file object with a url() method or just a URL string
+      const imageUrl = typeof prediction.output === 'string' 
+        ? prediction.output 
+        : prediction.output.url || prediction.output[0];
+      
+      console.log('Image generated successfully, downloading from:', imageUrl);
+      
+      const imageResponse = await axios.get(imageUrl, {
+        responseType: 'arraybuffer',
+      });
+      
+      const uploadsDir = path.join(__dirname, '../../uploads');
+      await fs.mkdir(uploadsDir, { recursive: true });
+      
+      const filename = `replicate-remix-${Date.now()}.jpg`;
+      const filepath = path.join(uploadsDir, filename);
+      
+      await fs.writeFile(filepath, Buffer.from(imageResponse.data));
+      console.log('Replicate remix image saved successfully!');
+      
+      return `/uploads/${filename}`;
+    }
+    
+    throw new Error(`Prediction failed or timed out. Status: ${prediction.status}, Error: ${prediction.error || 'none'}`);
   } catch (error) {
-    console.error('Error creating festive composite:', error);
-    return '';
+    console.error('Error generating festive image with Replicate:', error);
+    if (axios.isAxiosError(error)) {
+      console.error('Response data:', error.response?.data);
+      console.error('Response status:', error.response?.status);
+    }
+    
+    // Fallback to festive composite with decorative wreaths
+    console.log('Falling back to festive composite service...');
+    const { createFestiveComposite } = require('./festiveCompositeService');
+    
+    try {
+      const imagePath = await createFestiveComposite(ceoImagePath, recipientImagePath);
+      return imagePath;
+    } catch (fallbackError) {
+      console.error('Error creating festive composite:', fallbackError);
+      return '';
+    }
   }
 }
