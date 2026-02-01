@@ -137,7 +137,13 @@ export async function generateFestiveImage(
     // Include aspect ratio instruction directly in the prompt since OpenRouter may not support parameter passing
     const prompt = `Generate an image in 3:2 aspect ratio (landscape orientation, wider than tall).
 
-Take these two people and create a festive Christmas scene with them. Choose one of these scenarios: snowball fight, sleigh riding, walking down a Christmas village road, building a snowman, putting up Christmas lights, building a gingerbread house, ice skating, decorating a Christmas tree, one person holding a ladder while the other hangs lights, sledding down a hill, sitting by a fireplace in sweaters, drinking hot chocolate or mulled cider, or carrying a small tree together. 
+Take these two people and create a festive Christmas scene with them. I have a list of scenarios below. I want you to perform two steps:
+
+Random Selection: Pick exactly ONE scenario from the list at random. Do not combine them. Tell me which one you picked.
+
+Generation: Generate an image of ONLY that specific scenario.
+
+The list: Snowball fight, sleigh riding, walking down a Christmas village road, building a snowman, putting up Christmas lights, building a gingerbread house, ice skating, decorating a Christmas tree, one person holding a ladder while the other hangs lights, sledding down a hill, sitting by a fireplace in sweaters, drinking hot chocolate or mulled cider, or carrying a small tree together. 
 
 Peanuts style.
 
