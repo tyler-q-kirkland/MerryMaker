@@ -602,6 +602,9 @@
   text-align: center;
   box-shadow: 0 2px 8px rgba(255, 193, 7, 0.3);
   animation: pulse 2s ease-in-out infinite;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  hyphens: auto;
 }
 
 .preview-message {

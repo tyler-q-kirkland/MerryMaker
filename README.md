@@ -7,8 +7,8 @@ A full-stack web application for creating and sending personalized AI-generated 
 - 🔐 **Google OAuth Authentication** - Secure login with Google accounts
 - 👤 **User Profiles** - Upload selfies and set personal words
 - 🎅 **CEO Dashboard** - Special interface for sending personalized cards
-- 🤖 **AI-Generated Messages** - OpenAI creates festive greetings combining CEO messages with user words
-- 🖼️ **Festive Image Composition** - Combines user and CEO photos with festive backgrounds
+- 🤖 **AI-Generated Messages** - GPT-4 via OpenRouter creates festive greetings combining CEO messages with user words
+- 🖼️ **AI-Generated Festive Images** - Nano Banana Pro via OpenRouter creates custom Christmas scenes with both people
 - 📧 **Email Notifications** - Recipients receive email links to view their cards
 - 🐳 **Dockerized** - Full Docker support for easy deployment
 - 💻 **Local Development** - Can run locally without Docker
@@ -27,8 +27,9 @@ A full-stack web application for creating and sending personalized AI-generated 
 - Knex.js for database migrations
 - PostgreSQL database
 - Passport.js with Google OAuth 2.0
-- OpenAI API for AI-generated messages
-- Sharp for image processing
+- OpenRouter API with GPT-4 for AI-generated messages
+- OpenRouter API with Nano Banana Pro for AI-generated festive images
+- Sharp for image processing (fallback composite images)
 - Nodemailer for email sending
 
 ### Infrastructure
@@ -40,7 +41,7 @@ A full-stack web application for creating and sending personalized AI-generated 
 - Node.js 18+ (for local development)
 - Docker & Docker Compose (for containerized deployment)
 - Google OAuth credentials
-- OpenAI API key
+- OpenRouter API key (for GPT-4 and Nano Banana Pro)
 - Email account for sending notifications (Gmail recommended)
 
 ## Setup Instructions
@@ -79,8 +80,9 @@ GOOGLE_CLIENT_SECRET=your_google_client_secret
 # CEO Email (this user gets admin interface)
 CEO_EMAIL=ceo@yourcompany.com
 
-# OpenAI API (Get from https://platform.openai.com/)
-OPENAI_API_KEY=your_openai_api_key
+# OpenRouter API (Get from https://openrouter.ai/)
+# Used for both GPT-4 (messages) and Nano Banana Pro (images)
+OPENROUTER_API_KEY=your_openrouter_api_key
 
 # Email Configuration (for Gmail)
 EMAIL_HOST=smtp.gmail.com

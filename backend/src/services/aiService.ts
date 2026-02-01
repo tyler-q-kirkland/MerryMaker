@@ -118,9 +118,9 @@ export async function generateFestiveImage(
   recipientName: string
 ): Promise<{ imagePath: string; usedFallback: boolean }> {
   try {
-    console.log('Generating festive image using Replicate reve/remix model...');
+    console.log('Generating festive image using Gemini 3 Pro Image via OpenRouter...');
     
-    // Convert both images to base64 data URLs for reference_images
+    // Convert both images to base64 data URLs
     const ceoBase64 = await imageToBase64(ceoImagePath);
     const recipientBase64 = await imageToBase64(recipientImagePath);
     
@@ -133,94 +133,118 @@ export async function generateFestiveImage(
     const ceoDataUrl = `data:${ceoMimeType};base64,${ceoBase64}`;
     const recipientDataUrl = `data:${recipientMimeType};base64,${recipientBase64}`;
     
-    // Create prediction using Replicate's reve/remix model
-    // This model uses reference_images array and blends them together
-    const requestBody = {
-      input: {
-        prompt: 'Take these two people and put them into a Christmas scene. The Christmas scenes can be one of the following numbered options: 1. Snowball fight 2. Sleighriding 3. Walking down a christmas village road 4. Building a snowman 5. Putting up christmas lights 6. Building a gingerbread house 7. Ice skating 8. Decorating a christmas tree 9. One person holding the ladder the other hanging lights 10. Sledding down a hill 11. Sitting by a fireplace in sweaters 12. Drinking hot chocolate or mulled cider 13. Carrying a small tree together. The style should be cartoonish in nature, like the classic television show Peanuts. Remember that this will be between a CEO and an employee and should not be too personal- but ensure it is still warm.',
-        version: 'latest',
-        aspect_ratio: '3:2',
-        reference_images: [ceoDataUrl, recipientDataUrl],
-      },
-    };
+    // Use Gemini 3 Pro Image through OpenRouter for image generation
+    // Include aspect ratio instruction directly in the prompt since OpenRouter may not support parameter passing
+    const prompt = `Generate an image in 3:2 aspect ratio (landscape orientation, wider than tall).
+
+Take these two people and create a festive Christmas scene with them. Choose one of these scenarios: snowball fight, sleigh riding, walking down a Christmas village road, building a snowman, putting up Christmas lights, building a gingerbread house, ice skating, decorating a Christmas tree, one person holding a ladder while the other hangs lights, sledding down a hill, sitting by a fireplace in sweaters, drinking hot chocolate or mulled cider, or carrying a small tree together. 
+
+Peanuts style.
+
+IMPORTANT: 
+- The image MUST be in 3:2 aspect ratio (landscape/horizontal format)
+- Both people from the reference images must be clearly visible and recognizable in the final scene
+- Maintain their facial features, skin tones, and distinctive characteristics accurately but in the Peanuts style
+- Don't add any other Peanuts characters`;
+
+    console.log('Sending request to Gemini 3 Pro Image via OpenRouter...');
     
-    console.log('Sending request to Replicate reve/remix with:');
-    console.log('- Prompt length:', requestBody.input.prompt.length);
-    console.log('- Reference images count:', requestBody.input.reference_images.length);
-    console.log('- Image 1 length:', requestBody.input.reference_images[0].length);
-    console.log('- Image 2 length:', requestBody.input.reference_images[1].length);
-    
-    const createResponse = await axios.post(
-      'https://api.replicate.com/v1/models/reve/remix/predictions',
-      requestBody,
-      {
-        headers: {
-          'Authorization': `Token ${process.env.REPLICATE_API_KEY}`,
-          'Content-Type': 'application/json',
-        },
-      }
-    );
-    
-    console.log('Replicate prediction created:', createResponse.data.id);
-    console.log('Full response:', JSON.stringify(createResponse.data, null, 2));
-    
-    if (createResponse.data.error) {
-      console.error('Replicate error:', createResponse.data.error);
-    }
-    
-    // Poll for the result
-    let prediction = createResponse.data;
-    const maxAttempts = 60; // 60 attempts * 2 seconds = 2 minutes max
-    let attempts = 0;
-    
-    while (prediction.status !== 'succeeded' && prediction.status !== 'failed' && attempts < maxAttempts) {
-      await new Promise(resolve => setTimeout(resolve, 2000)); // Wait 2 seconds
-      
-      const statusResponse = await axios.get(
-        `https://api.replicate.com/v1/predictions/${prediction.id}`,
+    const response = await openai.chat.completions.create({
+      model: 'google/gemini-3-pro-image-preview',
+      messages: [
         {
-          headers: {
-            'Authorization': `Token ${process.env.REPLICATE_API_KEY}`,
-          },
-        }
-      );
+          role: 'user',
+          content: [
+            {
+              type: 'text',
+              text: prompt,
+            },
+            {
+              type: 'image_url',
+              image_url: {
+                url: ceoDataUrl,
+              },
+            },
+            {
+              type: 'image_url',
+              image_url: {
+                url: recipientDataUrl,
+              },
+            },
+          ],
+        },
+      ],
+      max_tokens: 4096,
+    } as any);
+
+    console.log('Gemini 3 Pro Image response received');
+    
+    // Gemini returns base64 image data in various possible formats
+    const message = response.choices[0]?.message;
+    console.log('Message content type:', typeof message?.content);
+    console.log('Message content is array?', Array.isArray(message?.content));
+    console.log('Message has images?', !!(message as any)?.images);
+    
+    if (!message) {
+      throw new Error('No message in response from Gemini 3 Pro Image');
+    }
+
+    let base64Data: string;
+    
+    // Check for images array first (Gemini 3 Pro Image format)
+    if ((message as any).images && Array.isArray((message as any).images) && (message as any).images.length > 0) {
+      console.log('Found images array with', (message as any).images.length, 'images');
+      const firstImage = (message as any).images[0];
       
-      prediction = statusResponse.data;
-      attempts++;
-      console.log(`Prediction status: ${prediction.status} (attempt ${attempts}/${maxAttempts})`);
-      
-      if (prediction.error) {
-        console.error('Prediction error:', prediction.error);
+      if (firstImage.type === 'image_url' && firstImage.image_url?.url) {
+        console.log('Extracting base64 from image_url format');
+        const imageUrl = firstImage.image_url.url;
+        base64Data = imageUrl.replace(/^data:image\/\w+;base64,/, '');
+      } else {
+        throw new Error('Unexpected image format in images array');
       }
     }
-    
-    if (prediction.status === 'succeeded' && prediction.output) {
-      // The output should be a file object with a url() method or just a URL string
-      const imageUrl = typeof prediction.output === 'string' 
-        ? prediction.output 
-        : prediction.output.url || prediction.output[0];
+    // Handle array content format
+    else if (Array.isArray(message.content)) {
+      console.log('Content is array format');
+      const imageContent = message.content.find((item: any) => item.type === 'image');
       
-      console.log('Image generated successfully, downloading from:', imageUrl);
+      if (!imageContent || !imageContent.image) {
+        console.log('No image data found in array. Content:', JSON.stringify(message.content, null, 2));
+        throw new Error('No image data found in Gemini 3 Pro Image response');
+      }
       
-      const imageResponse = await axios.get(imageUrl, {
-        responseType: 'arraybuffer',
-      });
-      
-      const uploadsDir = path.join(__dirname, '../../uploads');
-      await fs.mkdir(uploadsDir, { recursive: true });
-      
-      const filename = `replicate-remix-${Date.now()}.jpg`;
-      const filepath = path.join(uploadsDir, filename);
-      
-      await fs.writeFile(filepath, Buffer.from(imageResponse.data));
-      console.log('Replicate remix image saved successfully!');
-      
-      return { imagePath: `/uploads/${filename}`, usedFallback: false };
+      base64Data = imageContent.image.replace(/^data:image\/\w+;base64,/, '');
     }
+    // Handle string content format
+    else if (typeof message.content === 'string') {
+      console.log('Content is string format, checking for base64...');
+      // Content might be a direct base64 string or data URL
+      if (message.content.startsWith('data:image')) {
+        base64Data = message.content.replace(/^data:image\/\w+;base64,/, '');
+      } else {
+        // Assume it's already base64
+        base64Data = message.content;
+      }
+    } else {
+      throw new Error('Unexpected content format from Gemini 3 Pro Image - no images array, content array, or string content found');
+    }
+
+    console.log('Found base64 image data, length:', base64Data.length);
+    const imageBuffer = Buffer.from(base64Data, 'base64');
     
-    throw new Error(`Prediction failed or timed out. Status: ${prediction.status}, Error: ${prediction.error || 'none'}`);
+    const uploadsDir = path.join(__dirname, '../../uploads');
+    await fs.mkdir(uploadsDir, { recursive: true });
+    
+    const filename = `gemini-generated-${Date.now()}.png`;
+    const filepath = path.join(uploadsDir, filename);
+    
+    await fs.writeFile(filepath, imageBuffer);
+    console.log('Gemini 3 Pro Image saved successfully!');
+    
+    return { imagePath: `/uploads/${filename}`, usedFallback: false };
   } catch (error) {
-    console.error('Error generating festive image with Replicate:', error);
+    console.error('Error generating festive image with Gemini 3 Pro Image:', error);
     if (axios.isAxiosError(error)) {
       console.error('Response data:', error.response?.data);
       console.error('Response status:', error.response?.status);
