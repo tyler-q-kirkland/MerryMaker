@@ -3,6 +3,29 @@ import fs from 'fs/promises';
 import path from 'path';
 import axios from 'axios';
 
+// List of festive Christmas scenarios
+const CHRISTMAS_SCENARIOS = [
+  'Snowball fight',
+  'sleigh riding',
+  'walking down a Christmas village road',
+  'building a snowman',
+  'putting up Christmas lights',
+  'building a gingerbread house',
+  'ice skating',
+  'decorating a Christmas tree',
+  'one person holding a ladder while the other hangs lights',
+  'sledding down a hill',
+  'sitting by a fireplace in sweaters',
+  'drinking hot chocolate or mulled cider',
+  'carrying a small tree together',
+];
+
+// Helper function to randomly select a scenario
+function getRandomScenario(): string {
+  const randomIndex = Math.floor(Math.random() * CHRISTMAS_SCENARIOS.length);
+  return CHRISTMAS_SCENARIOS[randomIndex];
+}
+
 // Configure OpenAI SDK to use OpenRouter
 const openai = new OpenAI({
   apiKey: process.env.OPENROUTER_API_KEY,
@@ -20,53 +43,6 @@ async function imageToBase64(imagePath: string): Promise<string> {
   return imageBuffer.toString('base64');
 }
 
-// Analyze a photo and describe the person
-async function describePhoto(imagePath: string, personRole: string): Promise<string> {
-  try {
-    const base64Image = await imageToBase64(imagePath);
-    const mimeType = imagePath.endsWith('.png') ? 'image/png' : 'image/jpeg';
-    
-    const response = await openai.chat.completions.create({
-      model: 'openai/gpt-4o',  // Using OpenRouter's model naming
-      messages: [
-        {
-          role: 'user',
-          content: [
-            {
-              type: 'text',
-              text: `You are analyzing a photo to create an accurate description for AI image generation. Describe this person's appearance with PRECISE details that will ensure the generated image looks like them:
-
-CRITICAL - Include these specific details:
-- Exact skin tone (very pale, fair, light, medium, tan, olive, brown, dark brown, etc.)
-- Precise ethnicity/racial features if visible (Caucasian, Asian, African, Hispanic, etc.)
-- Exact hair color (platinum blonde, golden blonde, light brown, dark brown, black, gray, white, red, auburn, etc.)
-- Specific hair style and length (short cropped, shoulder-length wavy, long straight, curly, etc.)
-- Facial features (round face, angular face, prominent cheekbones, etc.)
-- Eye color if visible
-- Approximate age range
-- Any distinctive features (glasses, facial hair, etc.)
-- Gender
-
-Be VERY specific about ethnicity and skin tone to ensure accurate representation. This is the ${personRole}.`,
-            },
-            {
-              type: 'image_url',
-              image_url: {
-                url: `data:${mimeType};base64,${base64Image}`,
-              },
-            },
-          ],
-        },
-      ],
-      max_tokens: 250,
-    });
-
-    return response.choices[0]?.message?.content || `a person (${personRole})`;
-  } catch (error) {
-    console.error(`Error describing ${personRole} photo:`, error);
-    return `a person (${personRole})`;
-  }
-}
 
 export async function generateChristmasMessage(
   ceoMessage: string,
@@ -96,6 +72,7 @@ CRITICAL RULES:
 2. DO NOT start with "Dear ${recipientName}" or any greeting - the card already has that.
 3. DO NOT end with "From ${ceoName}" or "Sincerely" or any closing - the card already has a signature.
 4. Just write the message body content - 2-3 sentences that are festive, positive, and heartfelt.
+6. DO NOT INCLUDE ${ceoName} for any reason.
 
 The message should feel personal and warm, coming from ${ceoName} to ${recipientName}, incorporating the word "${recipientWord}".`,
         },
@@ -133,17 +110,15 @@ export async function generateFestiveImage(
     const ceoDataUrl = `data:${ceoMimeType};base64,${ceoBase64}`;
     const recipientDataUrl = `data:${recipientMimeType};base64,${recipientBase64}`;
     
+    // Randomly select a scenario
+    const selectedScenario = getRandomScenario();
+    console.log('Selected scenario:', selectedScenario);
+    
     // Use Gemini 3 Pro Image through OpenRouter for image generation
     // Include aspect ratio instruction directly in the prompt since OpenRouter may not support parameter passing
     const prompt = `Generate an image in 3:2 aspect ratio (landscape orientation, wider than tall).
 
-Take these two people and create a festive Christmas scene with them. I have a list of scenarios below. I want you to perform two steps:
-
-Random Selection: Pick exactly ONE scenario from the list at random. Do not combine them. Tell me which one you picked.
-
-Generation: Generate an image of ONLY that specific scenario.
-
-The list: Snowball fight, sleigh riding, walking down a Christmas village road, building a snowman, putting up Christmas lights, building a gingerbread house, ice skating, decorating a Christmas tree, one person holding a ladder while the other hangs lights, sledding down a hill, sitting by a fireplace in sweaters, drinking hot chocolate or mulled cider, or carrying a small tree together. 
+Take these two people and create a festive Christmas scene with them doing the following activity: ${selectedScenario}
 
 Peanuts style.
 
