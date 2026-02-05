@@ -126,6 +126,7 @@ IMPORTANT:
 - The image MUST be in 3:2 aspect ratio (landscape/horizontal format)
 - Both people from the reference images must be clearly visible and recognizable in the final scene
 - Maintain their facial features, skin tones, and distinctive characteristics accurately but in the Peanuts style
+- Don't include any text bubbles
 - Don't add any other Peanuts characters`;
 
     console.log('Sending request to Gemini 3 Pro Image via OpenRouter...');
